@@ -2603,7 +2603,7 @@ const VistaSeguimiento=({user,entidad,datos,isMonitoreo,userCargo})=>{
 
   const abrirEditar=(u)=>{
     setUsuarioEdit(u);
-    setForm({email:u.email,nombre:u.nombre||'',rol:u.rol,password:''});
+    setForm({email:u.email,nombre:u.nombre||'',rol:u.rol,password:'',cargo:u.cargo||''});
     setModal(true);
   };
 
