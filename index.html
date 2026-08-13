@@ -553,17 +553,19 @@ const VistaDashboard=({entidad,datos})=>{
 };
 const CargosSelect=({value,onChange,entidad})=>{
   const[cargos,setCargos]=useState([]);
+  const[listo,setListo]=useState(false);
   useEffect(()=>{
     const unsub=db.collection('coofisam_cargos').onSnapshot(s=>{
       const d=[];s.forEach(doc=>d.push({id:doc.id,...doc.data()}));
       d.sort((a,b)=>a.nombre.localeCompare(b.nombre));
-      setCargos(d);
+      setCargos(d);setListo(true);
     });
     return()=>unsub();
   },[]);
+  if(!listo)return(<select style={{width:'100%',padding:'0.75rem',border:'2px solid #E5E7EB',borderRadius:'8px',fontSize:'1rem'}} disabled><option>Cargando...</option></select>);
   return(<select value={value} onChange={e=>onChange(e.target.value)}
     style={{width:'100%',padding:'0.75rem',border:'2px solid #E5E7EB',borderRadius:'8px',fontSize:'1rem'}}>
-    <option value="">Sin cargo</option>
+    <option value="">Seleccionar cargo...</option>
     {cargos.map(c=><option key={c.id} value={c.nombre}>{c.nombre}</option>)}
   </select>);
 };
