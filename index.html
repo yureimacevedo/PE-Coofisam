@@ -1954,8 +1954,11 @@ const VistaPlanOperativo=({user,entidad,datos,isAdmin,isMonitoreo,userCargo})=>{
                   {plan.descripcion&&<p style={{margin:'0.5rem 0 0 0',fontSize:'0.85rem',color:'#6B7280',fontStyle:'italic'}}>"{plan.descripcion}"</p>}
                 </div>
                 <div style={{display:'flex',gap:'0.3rem'}} onClick={e=>e.stopPropagation()}>
-                  {!isMonitoreo&&<button className="btn-edit" onClick={()=>{setFormPlan(plan);setItemEdit(plan);setModalPlan(true);}} style={{padding:'0.3rem 0.5rem',fontSize:'0.75rem'}}>✏️</button>}
-                  {!isMonitoreo&&<button className="btn-secondary" onClick={()=>eliminarPlan(plan.id)} style={{padding:'0.3rem 0.5rem',fontSize:'0.75rem'}}>🗑️</button>}
+                  {plan.aprobado&&<span style={{background:'#059669',color:'white',fontSize:'0.7rem',padding:'2px 8px',borderRadius:'12px'}}>✅ Aprobado</span>}
+                  {!isMonitoreo&&!plan.aprobado&&<button className="btn-edit" onClick={()=>{setFormPlan(plan);setItemEdit(plan);setModalPlan(true);}} style={{padding:'0.3rem 0.5rem',fontSize:'0.75rem'}}>✏️</button>}
+                  {!isMonitoreo&&!plan.aprobado&&<button className="btn-secondary" onClick={()=>eliminarPlan(plan.id)} style={{padding:'0.3rem 0.5rem',fontSize:'0.75rem'}}>🗑️</button>}
+                  {isAdmin&&!plan.aprobado&&<button className="btn-primary" style={{padding:'0.3rem 0.6rem',fontSize:'0.75rem',background:'#059669',width:'auto'}} onClick={e=>{e.stopPropagation();aprobarPlan(plan);}}>✅ Aprobar</button>}
+                  {isAdmin&&plan.aprobado&&<button className="btn-secondary" style={{padding:'0.3rem 0.6rem',fontSize:'0.75rem',borderColor:'#D97706',color:'#D97706',width:'auto'}} onClick={e=>{e.stopPropagation();desbloquearPlan(plan);}}>🔓 Desbloquear</button>}
                 </div>
               </div>
             </div>);
