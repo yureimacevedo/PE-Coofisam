@@ -1790,17 +1790,26 @@ const VistaPlanOperativo=({user,entidad,datos,isAdmin,isMonitoreo,userCargo})=>{
   
   const aprobarPlan=async(plan)=>{
     if(!window.confirm('¿Aprobar este POA? Quedará bloqueado para edición hasta que lo desbloquees.'))return;
-    await db.collection('coofisam_datos').doc(entidad.id).collection('planes_operativos').doc(plan.id).update({
-      aprobado:true,
-      aprobadoPor:user.email,
-      aprobadoAt:firebase.firestore.FieldValue.serverTimestamp()
-    });
+    try{
+      await db.collection('coofisam_datos').doc(entidad.id).collection('planes_operativos').doc(plan.id).update({
+        aprobado:true,
+        aprobadoPor:user.email,
+        aprobadoAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      setPlanSel(prev=>prev&&prev.id===plan.id?{...prev,aprobado:true}:prev);
+    }catch(err){alert('Error al aprobar: '+err.message);}
   };
   const desbloquearPlan=async(plan)=>{
-    if(!window.confirm('¿Desbloquear este POA? Solo hazlo con autorización de gerencia.'))return;
-    await db.collection('coofisam_datos').doc(entidad.id).collection('planes_operativos').doc(plan.id).update({
-      aprobado:false,aprobadoPor:null,aprobadoAt:null
-    });
+    if(!plan?.id){alert('Error: plan no identificado');return;}
+    const ok=window.confirm('¿Desbloquear este POA? Solo hazlo con autorización de gerencia.');
+    if(!ok)return;
+    try{
+      await db.collection('coofisam_datos').doc(entidad.id).collection('planes_operativos').doc(plan.id).update({
+        aprobado:false,aprobadoPor:null,aprobadoAt:null
+      });
+      // Actualizar planSel en memoria para reflejar el cambio inmediatamente
+      setPlanSel(prev=>prev&&prev.id===plan.id?{...prev,aprobado:false,aprobadoPor:null,aprobadoAt:null}:prev);
+    }catch(err){alert('Error al desbloquear: '+err.message);}
   };
   const guardarPlan=async(e)=>{
     e.preventDefault();setLoading(true);
