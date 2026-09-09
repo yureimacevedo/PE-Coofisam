@@ -369,7 +369,8 @@ const VistaDashboard=({entidad,datos})=>{
       if(a.anio!==b.anio)return parseInt(a.anio)-parseInt(b.anio);
       return mesesOrden.indexOf(a.mes)-mesesOrden.indexOf(b.mes);
     }):[];
-    return{...ind,ultimoSeguimiento:ultSeg,avanceAcum:avanceCalc,metaAcum:metaCalc,enPeriodo,objetivo:obj,eje:eje,segsAnio:segsAnioOrdenados};
+    const objPadre=obj?.esTactico?objetivos.find(o=>o.id===obj.objetivoPadreId):null;
+    return{...ind,ultimoSeguimiento:ultSeg,avanceAcum:avanceCalc,metaAcum:metaCalc,enPeriodo,objetivo:obj,objetivoPadre:objPadre,eje:eje,segsAnio:segsAnioOrdenados};
   }).filter(ind=>ind.enPeriodo||(ind.ultimoSeguimiento&&!modoAnio));
 
   return(<div>
@@ -526,7 +527,11 @@ const VistaDashboard=({entidad,datos})=>{
             return(<React.Fragment key={ind.id}>
               <tr style={{background:'#F0F4FF'}}>
                 <td rowSpan={ind.segsAnio.length+1}><div className="badge" style={{background:ind.eje?.color||'#6B7280',color:'white',padding:'0.2rem 0.5rem',borderRadius:'6px',fontSize:'0.75rem'}}>{ind.eje?.nombre||'-'}</div></td>
-                <td rowSpan={ind.segsAnio.length+1} style={{fontSize:'0.8rem',color:'#6B7280'}}>{ind.objetivo?.nombre}</td>
+                <td rowSpan={ind.segsAnio.length+1} style={{fontSize:'0.8rem',color:'#6B7280'}}>
+                  {ind.objetivo?.esTactico&&<span style={{display:'block',fontSize:'0.65rem',background:'#FEE2E2',color:'#DC2626',padding:'1px 5px',borderRadius:'8px',marginBottom:'0.2rem',width:'fit-content'}}>↳ Táctico</span>}
+                  {ind.objetivo?.nombre}
+                  {ind.objetivo?.esTactico&&ind.objetivoPadre&&<span style={{display:'block',fontSize:'0.65rem',color:'#9CA3AF',marginTop:'0.15rem'}}>↑ {ind.objetivoPadre.nombre}</span>}
+                </td>
                 <td colSpan={5}><strong>{ind.nombre}</strong> <span style={{fontSize:'0.75rem',color:'#6B7280'}}>({ind.segsAnio.length} registros en {filtroAnio})</span></td>
               </tr>
               {ind.segsAnio.map(seg=>{
@@ -779,7 +784,21 @@ const VistaConfig=({user,entidad,datos,isAdmin})=>{
   const scoreConfig=entidad.scoreConfig||{critico:{min:0,max:60},precaucion:{min:61,max:85},optimo:{min:86,max:100}};
 
   const guardarEje=async(e)=>{e.preventDefault();setLoading(true);try{if(itemEdit){await ref.collection('ejes').doc(itemEdit.id).update(form);}else{await ref.collection('ejes').add(form);}setModal(null);setForm({});setItemEdit(null);}catch(error){alert('Error: '+error.message);}finally{setLoading(false);}};
-  const guardarObjetivo=async(e)=>{e.preventDefault();setLoading(true);try{if(itemEdit){await ref.collection('objetivos').doc(itemEdit.id).update(form);}else{await ref.collection('objetivos').add(form);}setModal(null);setForm({});setItemEdit(null);}catch(error){alert('Error: '+error.message);}finally{setLoading(false);}};
+  const guardarObjetivo=async(e)=>{
+    e.preventDefault();setLoading(true);
+    try{
+      const data={
+        ejeId:form.ejeId,
+        nombre:form.nombre,
+        objetivoPadreId:form.objetivoPadreId||'',
+        esTactico:form.objetivoPadreId?true:false,
+      };
+      if(itemEdit){await ref.collection('objetivos').doc(itemEdit.id).update(data);}
+      else{await ref.collection('objetivos').add(data);}
+      setModal(null);setForm({});setItemEdit(null);
+    }catch(error){alert('Error: '+error.message);}
+    finally{setLoading(false);}
+  };
   const guardarEstrategia=async(e)=>{e.preventDefault();setLoading(true);try{const data={objetivoId:form.objetivoId,nombre:form.nombre};if(itemEdit){await ref.collection('estrategias').doc(itemEdit.id).update(data);}else{await ref.collection('estrategias').add({...data,createdAt:firebase.firestore.FieldValue.serverTimestamp()});}setModal(null);setForm({});setItemEdit(null);}catch(error){alert('Error: '+error.message);}finally{setLoading(false);}};
 
   const getPeriodosPorPeriodicidad=(per)=>{
@@ -842,7 +861,7 @@ const VistaConfig=({user,entidad,datos,isAdmin})=>{
 
   const eliminar=async(coleccion,id)=>{if(!window.confirm('¿Eliminar?'))return;try{await ref.collection(coleccion).doc(id).delete();}catch(error){alert('Error: '+error.message);}};
   const editarEje=(eje)=>{setItemEdit(eje);setForm({nombre:eje.nombre,color:eje.color});setModal('eje');};
-  const editarObjetivo=(obj)=>{setItemEdit(obj);setForm({ejeId:obj.ejeId,nombre:obj.nombre});setModal('objetivo');};
+  const editarObjetivo=(obj)=>{setItemEdit(obj);setForm({ejeId:obj.ejeId,nombre:obj.nombre,objetivoPadreId:obj.objetivoPadreId||''});setModal('objetivo');};
   const editarEstrategia=(est)=>{setItemEdit(est);setForm({objetivoId:est.objetivoId,nombre:est.nombre});setModal('estrategia');};
   const editarIndicador=(ind)=>{
     setItemEdit(ind);
@@ -884,11 +903,33 @@ const VistaConfig=({user,entidad,datos,isAdmin})=>{
             <strong style={{color:eje.color,fontSize:'1rem'}}>{eje.nombre}</strong>
             <span style={{fontSize:'0.8rem',color:'#6B7280',marginLeft:'auto',background:'white',padding:'0.15rem 0.5rem',borderRadius:'12px',border:`1px solid ${eje.color}44`}}>{objsEje.length} {objsEje.length===1?'objetivo':'objetivos'}</span>
           </div>
-          <div className="grid">{objsEje.map(obj=>(
-            <div key={obj.id} className="card" style={{borderLeft:`4px solid ${eje.color}`,margin:0}}>
-              <p style={{fontWeight:600,color:'#111827',marginBottom:'0.5rem'}}>{obj.nombre}</p>
-              <div className="btn-group"><button className="btn-edit" onClick={()=>editarObjetivo(obj)}>✏️ Editar</button><button className="btn-secondary" onClick={()=>eliminar('objetivos',obj.id)}>🗑️ Eliminar</button></div>
-            </div>))}</div>
+          <div className="grid">{objsEje.filter(obj=>!obj.objetivoPadreId).map(obj=>{
+              const tacticos=objetivos.filter(o=>o.objetivoPadreId===obj.id);
+              return(<div key={obj.id} style={{margin:0}}>
+                <div className="card" style={{borderLeft:`4px solid ${eje.color}`,margin:0,marginBottom:tacticos.length>0?'0.5rem':'0'}}>
+                  <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                    <div style={{flex:1}}>
+                      <span style={{fontSize:'0.7rem',background:eje.color+'20',color:eje.color,padding:'1px 6px',borderRadius:'10px',fontWeight:600}}>Estratégico</span>
+                      <p style={{fontWeight:600,color:'#111827',marginBottom:'0.5rem',marginTop:'0.3rem'}}>{obj.nombre}</p>
+                    </div>
+                    <div className="btn-group"><button className="btn-edit" onClick={()=>editarObjetivo(obj)}>✏️</button><button className="btn-secondary" onClick={()=>eliminar('objetivos',obj.id)}>🗑️</button></div>
+                  </div>
+                </div>
+                {tacticos.length>0&&<div style={{marginLeft:'1rem',borderLeft:'2px dashed #D70014',paddingLeft:'0.75rem'}}>
+                  {tacticos.map(tac=>(
+                    <div key={tac.id} className="card" style={{borderLeft:`3px solid ${eje.color}88`,margin:0,marginBottom:'0.4rem',background:'#FFF8F8'}}>
+                      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+                        <div style={{flex:1}}>
+                          <span style={{fontSize:'0.7rem',background:'#FEE2E2',color:'#DC2626',padding:'1px 6px',borderRadius:'10px',fontWeight:600}}>↳ Táctico</span>
+                          <p style={{fontWeight:500,color:'#374151',marginBottom:'0.25rem',marginTop:'0.3rem',fontSize:'0.9rem'}}>{tac.nombre}</p>
+                        </div>
+                        <div className="btn-group"><button className="btn-edit" onClick={()=>editarObjetivo(tac)}>✏️</button><button className="btn-secondary" onClick={()=>eliminar('objetivos',tac.id)}>🗑️</button></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>}
+              </div>);
+            })}</div>
         </div>);})}</div>}
     </div>
 
@@ -974,6 +1015,16 @@ const VistaConfig=({user,entidad,datos,isAdmin})=>{
       <div className="modal-header"><h2>{itemEdit?'Editar':'Nuevo'} Objetivo</h2><button className="btn-cerrar" onClick={()=>setModal(null)}>×</button></div>
       <div className="modal-body"><form onSubmit={guardarObjetivo}>
         <div className="form-group"><label>Eje *</label><select value={form.ejeId} onChange={e=>setForm({...form,ejeId:e.target.value})} required><option value="">Seleccionar...</option>{ejes.map(e=><option key={e.id} value={e.id}>{e.nombre}</option>)}</select></div>
+        <div className="form-group">
+          <label>¿Es objetivo táctico? <span style={{fontSize:'0.75rem',color:'#6B7280'}}>(opcional — deriva de un objetivo estratégico)</span></label>
+          <select value={form.objetivoPadreId||''} onChange={e=>setForm({...form,objetivoPadreId:e.target.value})}>
+            <option value="">No — es objetivo estratégico</option>
+            {objetivos.filter(o=>!o.objetivoPadreId&&o.id!==itemEdit?.id).map(o=>{
+              const eje=ejes.find(e=>e.id===o.ejeId);
+              return<option key={o.id} value={o.id}>[{eje?.nombre}] {o.nombre}</option>;
+            })}
+          </select>
+        </div>
         <div className="form-group"><label>Nombre *</label><textarea value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} required rows={3}/></div>
         <button type="submit" className="btn-primary" disabled={loading}>{loading?'⏳...':'💾 Guardar'}</button>
       </form></div>
