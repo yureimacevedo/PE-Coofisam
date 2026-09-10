@@ -515,6 +515,66 @@ const VistaDashboard=({entidad,datos})=>{
       <div className="stat-card" style={{borderLeftColor:'#DC2626'}}><div className="stat-label">🔴 Críticos</div><div className="stat-value">{indicadoresConEstado.filter(i=>i.ultimoSeguimiento?.score==='critico').length}</div></div>
     </div>
 
+    {indicadores.length>0&&objetivos.length>0&&<div className="card">
+      <h3>🎯 Semáforo por Objetivo — {periodoLabel}</h3>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:'1rem',marginTop:'0.75rem'}}>
+        {objetivos.filter(o=>!o.objetivoPadreId).map(obj=>{
+          // Indicadores de este objetivo estratégico
+          const indsObj=indicadoresConEstado.filter(i=>i.objetivo?.id===obj.id||
+            (i.objetivo?.esTactico&&i.objetivo?.objetivoPadreId===obj.id));
+          if(indsObj.length===0)return null;
+          const conSeg=indsObj.filter(i=>i.ultimoSeguimiento);
+          const optimos=conSeg.filter(i=>i.ultimoSeguimiento?.score==='optimo').length;
+          const precaucion=conSeg.filter(i=>i.ultimoSeguimiento?.score==='precaucion').length;
+          const criticos=conSeg.filter(i=>i.ultimoSeguimiento?.score==='critico').length;
+          const sinMeta=indsObj.length-conSeg.length;
+          // Semáforo general del objetivo
+          const scoreObj=conSeg.length===0?'sin_meta':
+            criticos>0?'critico':
+            precaucion>0?'precaucion':'optimo';
+          const colores={optimo:{bg:'#D1FAE5',borde:'#059669',icon:'🟢',label:'Óptimo'},
+            precaucion:{bg:'#FEF3C7',borde:'#D97706',icon:'🟡',label:'Precaución'},
+            critico:{bg:'#FEE2E2',borde:'#DC2626',icon:'🔴',label:'Crítico'},
+            sin_meta:{bg:'#F3F4F6',borde:'#9CA3AF',icon:'⚪',label:'Sin datos'}};
+          const col=colores[scoreObj];
+          // Tácticos de este objetivo
+          const tacticos=objetivos.filter(o=>o.objetivoPadreId===obj.id);
+          return(<div key={obj.id} style={{background:col.bg,border:`2px solid ${col.borde}`,borderRadius:'12px',padding:'1rem'}}>
+            <div style={{display:'flex',alignItems:'flex-start',gap:'0.5rem',marginBottom:'0.75rem'}}>
+              <span style={{fontSize:'1.3rem'}}>{col.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:'0.7rem',fontWeight:700,color:col.borde,textTransform:'uppercase',marginBottom:'0.2rem'}}>{col.label}</div>
+                <p style={{fontWeight:700,color:'#111827',fontSize:'0.9rem',margin:0}}>{obj.nombre}</p>
+                {ejes.find(e=>e.id===obj.ejeId)&&<span style={{fontSize:'0.7rem',color:'#6B7280'}}>{ejes.find(e=>e.id===obj.ejeId)?.nombre}</span>}
+              </div>
+            </div>
+            <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap',marginBottom:'0.5rem'}}>
+              {optimos>0&&<span style={{background:'#059669',color:'white',fontSize:'0.7rem',padding:'2px 8px',borderRadius:'10px'}}>🟢 {optimos} óptimo{optimos!==1?'s':''}</span>}
+              {precaucion>0&&<span style={{background:'#D97706',color:'white',fontSize:'0.7rem',padding:'2px 8px',borderRadius:'10px'}}>🟡 {precaucion} precaución</span>}
+              {criticos>0&&<span style={{background:'#DC2626',color:'white',fontSize:'0.7rem',padding:'2px 8px',borderRadius:'10px'}}>🔴 {criticos} crítico{criticos!==1?'s':''}</span>}
+              {sinMeta>0&&<span style={{background:'#9CA3AF',color:'white',fontSize:'0.7rem',padding:'2px 8px',borderRadius:'10px'}}>⚪ {sinMeta} sin datos</span>}
+            </div>
+            {tacticos.length>0&&<div style={{borderTop:'1px solid '+col.borde+'44',paddingTop:'0.5rem',marginTop:'0.25rem'}}>
+              <p style={{fontSize:'0.7rem',color:'#6B7280',marginBottom:'0.3rem',fontWeight:600}}>Objetivos tácticos:</p>
+              {tacticos.map(tac=>{
+                const indsTac=indicadoresConEstado.filter(i=>i.objetivo?.id===tac.id);
+                const conSegTac=indsTac.filter(i=>i.ultimoSeguimiento);
+                const scoreTac=conSegTac.length===0?'sin_meta':
+                  conSegTac.some(i=>i.ultimoSeguimiento?.score==='critico')?'critico':
+                  conSegTac.some(i=>i.ultimoSeguimiento?.score==='precaucion')?'precaucion':'optimo';
+                const colTac=colores[scoreTac];
+                return(<div key={tac.id} style={{display:'flex',alignItems:'center',gap:'0.4rem',padding:'0.25rem 0.5rem',background:'white',borderRadius:'6px',marginBottom:'0.25rem',border:`1px solid ${colTac.borde}44`}}>
+                  <span style={{fontSize:'0.9rem'}}>{colTac.icon}</span>
+                  <span style={{fontSize:'0.78rem',color:'#374151',flex:1}}>↳ {tac.nombre}</span>
+                  <span style={{fontSize:'0.7rem',color:colTac.borde,fontWeight:600}}>{indsTac.length} ind.</span>
+                </div>);
+              })}
+            </div>}
+          </div>);
+        })}
+      </div>
+    </div>}
+
     {indicadores.length>0&&<div className="card">
       <h3>📊 Estado de Indicadores — {periodoLabel}</h3>
       <table className="tabla">
