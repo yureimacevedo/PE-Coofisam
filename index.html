@@ -1793,7 +1793,8 @@ const EricQuad=({quad,entries,area,cargo,isAdmin,canEdit,userId,bmc,vrio,onAdd,o
   const[editId,setEditId]=useState(null);
   const[editArea,setEditArea]=useState('');
   const[text,setText]=useState('');const[refValue,setRefValue]=useState('');const[transversal,setTransversal]=useState(false);
-  const limpiar=()=>{setEditId(null);setEditArea('');setText('');setRefValue('');setTransversal(false);};
+  const[busqRef,setBusqRef]=useState('');
+  const limpiar=()=>{setEditId(null);setEditArea('');setText('');setRefValue('');setTransversal(false);setBusqRef('');};
   const editar=(item)=>{setEditId(item.id);setEditArea(item.area||'');setText(item.texto);setRefValue(item.refTipo?item.refTipo+':'+item.refId:'');setTransversal(item.area===TRANSVERSAL);};
   const submit=(e)=>{e.preventDefault();if(!text.trim())return;
     const areaFinal=transversal?TRANSVERSAL:(area||editArea||'Sin asignar');
@@ -1815,11 +1816,30 @@ const EricQuad=({quad,entries,area,cargo,isAdmin,canEdit,userId,bmc,vrio,onAdd,o
     </div>
     {canEdit&&<form onSubmit={submit} style={{display:'flex',flexDirection:'column',gap:6}}>
       {editId&&<div style={{fontSize:'0.7rem',color:'#D70014',fontWeight:600}}>✏️ Editando — <a href="#" onClick={ev=>{ev.preventDefault();limpiar();}} style={{color:'#6B7280',fontWeight:400}}>cancelar</a></div>}
-      <select value={refValue} onChange={e=>setRefValue(e.target.value)} style={{fontSize:'0.7rem',padding:'0.3rem',border:'1px solid #E5E7EB',borderRadius:6}}>
-        <option value="">Enlazar a (opcional)...</option>
-        {bmc.length>0&&<optgroup label="Notas del Canvas">{bmc.map(n=><option key={n.id} value={'bmc:'+n.id}>{BMC_LABEL[n.bloque]}: {n.texto}</option>)}</optgroup>}
-        {vrio.length>0&&<optgroup label="Recursos VRIO">{vrio.map(v=><option key={v.id} value={'vrio:'+v.id}>{v.recurso}</option>)}</optgroup>}
-      </select>
+      <div style={{position:'relative',fontSize:'0.7rem'}}>
+        <div style={{display:'flex',gap:4,alignItems:'center',border:'1px solid #E5E7EB',borderRadius:6,padding:'0.2rem 0.4rem',background:'white'}}>
+          <span style={{color:'#9CA3AF'}}>🔗</span>
+          <input value={busqRef} onChange={e=>{setBusqRef(e.target.value);if(!e.target.value)setRefValue('');}}
+            placeholder="Buscar para enlazar (Canvas, VRIO)..."
+            style={{border:'none',outline:'none',fontSize:'0.7rem',flex:1,minWidth:180}}/>
+          {refValue&&<span style={{background:'#D1FAE5',color:'#065F46',padding:'1px 6px',borderRadius:10,fontSize:'0.65rem',whiteSpace:'nowrap',cursor:'pointer'}} onClick={()=>{setRefValue('');setBusqRef('');}}>
+            {refValue.startsWith('bmc:')?'Canvas':'VRIO'} ✕
+          </span>}
+        </div>
+        {busqRef&&!refValue&&<div style={{position:'absolute',top:'100%',left:0,right:0,background:'white',border:'1px solid #E5E7EB',borderRadius:6,boxShadow:'0 4px 12px rgba(0,0,0,0.1)',zIndex:100,maxHeight:200,overflowY:'auto',marginTop:2}}>
+          {[
+            ...bmc.filter(n=>n.texto&&(BMC_LABEL[n.bloque]+': '+n.texto).toLowerCase().includes(busqRef.toLowerCase())).map(n=>({val:'bmc:'+n.id,label:'🗂️ Canvas — '+BMC_LABEL[n.bloque]+': '+n.texto})),
+            ...vrio.filter(v=>v.recurso&&v.recurso.toLowerCase().includes(busqRef.toLowerCase())).map(v=>({val:'vrio:'+v.id,label:'💎 VRIO — '+v.recurso}))
+          ].map(op=>(<div key={op.val} onClick={()=>{setRefValue(op.val);setBusqRef(op.label.replace(/^[^\s]+\s—\s/,''));}}
+            style={{padding:'0.4rem 0.6rem',cursor:'pointer',borderBottom:'1px solid #F3F4F6',fontSize:'0.72rem',color:'#374151'}}
+            onMouseEnter={e=>e.target.style.background='#F3F4F6'} onMouseLeave={e=>e.target.style.background='white'}>
+            {op.label}
+          </div>))}
+          {bmc.filter(n=>n.texto&&(BMC_LABEL[n.bloque]+': '+n.texto).toLowerCase().includes(busqRef.toLowerCase())).length===0&&
+           vrio.filter(v=>v.recurso&&v.recurso.toLowerCase().includes(busqRef.toLowerCase())).length===0&&
+           <div style={{padding:'0.4rem 0.6rem',color:'#9CA3AF',fontSize:'0.72rem'}}>Sin resultados para "{busqRef}"</div>}
+        </div>}
+      </div>
       <div style={{display:'flex',gap:6}}>
         <input value={text} onChange={e=>setText(e.target.value)} placeholder={'Idea para '+quad.label.toLowerCase()+'...'} disabled={!editId&&!area&&!transversal} style={{flex:1,fontSize:'0.8rem',padding:'0.4rem 0.6rem',border:'1px solid #E5E7EB',borderRadius:6}}/>
         <button type="submit" disabled={!editId&&!area&&!transversal} style={{borderRadius:6,padding:'0 0.8rem',background:'#D70014',color:'white',border:'none',cursor:'pointer'}}>{editId?'💾':'+'}</button>
