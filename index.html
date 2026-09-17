@@ -1830,7 +1830,7 @@ const EricQuad=({quad,entries,area,cargo,isAdmin,canEdit,userId,bmc,vrio,onAdd,o
           {[
             ...bmc.filter(n=>n.texto&&(BMC_LABEL[n.bloque]+': '+n.texto).toLowerCase().includes(busqRef.toLowerCase())).map(n=>({val:'bmc:'+n.id,label:'🗂️ Canvas — '+BMC_LABEL[n.bloque]+': '+n.texto})),
             ...vrio.filter(v=>v.recurso&&v.recurso.toLowerCase().includes(busqRef.toLowerCase())).map(v=>({val:'vrio:'+v.id,label:'💎 VRIO — '+v.recurso}))
-          ].map(op=>(<div key={op.val} onClick={()=>{setRefValue(op.val);setBusqRef(op.label.replace(/^[^\s]+\s—\s/,''));}}
+          ].map(op=>(<div key={op.val} onClick={()=>{setRefValue(op.val);setBusqRef(op.label.split(' — ').slice(1).join(' — '));}}
             style={{padding:'0.4rem 0.6rem',cursor:'pointer',borderBottom:'1px solid #F3F4F6',fontSize:'0.72rem',color:'#374151'}}
             onMouseEnter={e=>e.target.style.background='#F3F4F6'} onMouseLeave={e=>e.target.style.background='white'}>
             {op.label}
