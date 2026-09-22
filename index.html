@@ -183,6 +183,7 @@ const MainApp=({user,userRol,userCargo,userHabilitaciones={}})=>{
   const[sidebarOpen,setSidebarOpen]=useState(true);
   const isAdmin=userRol==='admin'||userRol===null;
   const isMonitoreo=userRol==='monitoreo';
+  const isLiderPE=userRol==='lider_pe';
   const[vista,setVista]=useState('entidades');
   const[entidades,setEntidades]=useState([]);
   const[entidadActiva,setEntidadActiva]=useState(null);
