@@ -1485,7 +1485,7 @@ const ModalImpresionAnalisis=({entidad,vrio,contraste,pestel,bmc,eric,areaLabel,
 
 const TRANSVERSAL='Transversal / Corporativo';
 
-const CanvasConsolidadoBloque=({bloque,entidad})=>{
+const CanvasConsolidadoBloque=({bloque,entidad,isAdmin})=>{
   const[texto,setTexto]=React.useState('');
   const[guardado,setGuardado]=React.useState(false);
   React.useEffect(()=>{
@@ -1503,13 +1503,14 @@ const CanvasConsolidadoBloque=({bloque,entidad})=>{
   };
   return(<div style={{marginBottom:'1.25rem',borderLeft:'3px solid #D70014',paddingLeft:'0.75rem'}}>
     <label style={{fontWeight:700,fontSize:'0.85rem',color:'#374151',display:'block',marginBottom:'0.3rem'}}>{bloque.label}</label>
-    <textarea value={texto} onChange={e=>setTexto(e.target.value)} rows={4}
-      style={{width:'100%',padding:'0.6rem',border:'1px solid #E5E7EB',borderRadius:'6px',fontSize:'0.85rem',lineHeight:1.6,resize:'vertical'}}
-      placeholder={'Escribe aquí la síntesis consolidada de '+bloque.label+'...'}/>
-    <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginTop:'0.25rem'}}>
+    <textarea value={texto} onChange={e=>isAdmin&&setTexto(e.target.value)} rows={4}
+      readOnly={!isAdmin}
+      style={{width:'100%',padding:'0.6rem',border:'1px solid #E5E7EB',borderRadius:'6px',fontSize:'0.85rem',lineHeight:1.6,resize:'vertical',background:isAdmin?'white':'#F9FAFB',color:isAdmin?'inherit':'#374151'}}
+      placeholder={isAdmin?'Escribe aquí la síntesis consolidada de '+bloque.label+'...':'Sin contenido aún.'}/>
+    {isAdmin&&<div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginTop:'0.25rem'}}>
       <button onClick={guardar} style={{background:'#D70014',color:'white',border:'none',borderRadius:'6px',padding:'0.25rem 0.75rem',cursor:'pointer',fontSize:'0.78rem'}}>💾 Guardar</button>
       {guardado&&<span style={{color:'#059669',fontSize:'0.78rem',fontWeight:600}}>✅ Guardado</span>}
-    </div>
+    </div>}
   </div>);
 };
 
@@ -1725,7 +1726,7 @@ const VistaAnalisis=({entidad,isAdmin,isMonitoreo,userCargo,user})=>{
           <h3 style={{marginBottom:'0.75rem',color:'#D70014'}}>✏️ Canvas Consolidado Final (editable)</h3>
           <p style={{fontSize:'0.82rem',color:'#6B7280',marginBottom:'1rem'}}>Escribe o pega aquí la versión consolidada de cada bloque. Esta es la versión oficial que se imprime.</p>
           {BMC_BLOCKS.map(bloque=>(
-            <CanvasConsolidadoBloque key={bloque.key} bloque={bloque} entidad={entidad}/>
+            <CanvasConsolidadoBloque key={bloque.key} bloque={bloque} entidad={entidad} isAdmin={isAdmin}/>
           ))}
         </div>
       </div>)}
