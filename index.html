@@ -316,6 +316,7 @@ const VistaDashboard=({entidad,datos})=>{
   const[modalInforme,setModalInforme]=useState(false);
   const[actividadesPOA,setActividadesPOA]=useState([]);
   const[planesPOA,setPlanesPOA]=useState([]);
+  const[tipoIndDash,setTipoIndDash]=useState('');
 
   useEffect(()=>{
     if(!entidad)return;
@@ -1032,7 +1033,47 @@ const VistaConfig=({user,entidad,datos,isAdmin})=>{
     }
   };
 
-  const eliminar=async(coleccion,id)=>{if(!window.confirm('¿Eliminar?'))return;try{await ref.collection(coleccion).doc(id).delete();}catch(error){alert('Error: '+error.message);}};
+  const eliminar=async(coleccion,id)=>{
+    // Calcular hijos para el mensaje de confirmación
+    let msg='¿Eliminar?';
+    if(coleccion==='ejes'){
+      const objsHijo=objetivos.filter(o=>o.ejeId===id);
+      const indHijo=indicadores.filter(i=>objsHijo.some(o=>o.id===i.objetivoId));
+      msg='¿Eliminar este eje? Se eliminarán también '+objsHijo.length+' objetivo(s) y '+indHijo.length+' indicador(es). Esta acción no se puede deshacer.';
+    } else if(coleccion==='objetivos'){
+      const indHijo=indicadores.filter(i=>i.objetivoId===id);
+      const tacticos=objetivos.filter(o=>o.objetivoPadreId===id);
+      msg='¿Eliminar este objetivo? Se eliminarán también '+tacticos.length+' objetivo(s) táctico(s) y '+indHijo.length+' indicador(es).';
+    } else if(coleccion==='indicadores'){
+      msg='¿Eliminar este indicador? También se eliminará de seguimiento.';
+    }
+    if(!window.confirm(msg))return;
+    try{
+      // Borrado en cascada
+      if(coleccion==='ejes'){
+        const objsHijo=objetivos.filter(o=>o.ejeId===id);
+        for(const obj of objsHijo){
+          const indsHijo=indicadores.filter(i=>i.objetivoId===obj.id);
+          for(const ind of indsHijo) await ref.collection('indicadores').doc(ind.id).delete();
+          const estsHijo=estrategias.filter(e=>e.objetivoId===obj.id);
+          for(const est of estsHijo) await ref.collection('estrategias').doc(est.id).delete();
+          await ref.collection('objetivos').doc(obj.id).delete();
+        }
+      } else if(coleccion==='objetivos'){
+        const tacticos=objetivos.filter(o=>o.objetivoPadreId===id);
+        for(const tac of tacticos){
+          const indsTac=indicadores.filter(i=>i.objetivoId===tac.id);
+          for(const ind of indsTac) await ref.collection('indicadores').doc(ind.id).delete();
+          await ref.collection('objetivos').doc(tac.id).delete();
+        }
+        const indsHijo=indicadores.filter(i=>i.objetivoId===id);
+        for(const ind of indsHijo) await ref.collection('indicadores').doc(ind.id).delete();
+        const estsHijo=estrategias.filter(e=>e.objetivoId===id);
+        for(const est of estsHijo) await ref.collection('estrategias').doc(est.id).delete();
+      }
+      await ref.collection(coleccion).doc(id).delete();
+    }catch(error){alert('Error: '+error.message);}
+  };
   const editarEje=(eje)=>{setItemEdit(eje);setForm({nombre:eje.nombre,color:eje.color});setModal('eje');};
   const editarObjetivo=(obj)=>{setItemEdit(obj);setForm({ejeId:obj.ejeId,nombre:obj.nombre,objetivoPadreId:obj.objetivoPadreId||'',tipoObjetivo:obj.esTactico?'tactico':'estrategico'});setModal('objetivo');};
   const editarEstrategia=(est)=>{setItemEdit(est);setForm({objetivoId:est.objetivoId,nombre:est.nombre});setModal('estrategia');};
