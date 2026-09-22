@@ -146,6 +146,7 @@ const App=()=>{
   const[user,setUser]=useState(null);
   const[userRol,setUserRol]=useState(null);
   const[userCargo,setUserCargo]=useState('');
+  const[userHabilitaciones,setUserHabilitaciones]=useState({habilitarPoa:false,habilitarIndicadores:false});
   const[loading,setLoading]=useState(true);
   useEffect(()=>{
     const unsub=auth.onAuthStateChanged(async(u)=>{
@@ -153,7 +154,7 @@ const App=()=>{
       if(u){
         await migrarDatosACompartido(u.uid,'coosanroque');
         const doc=await db.collection('coofisam_usuarios').doc(u.uid).get();
-        if(doc.exists){setUserRol(doc.data().rol||'admin');setUserCargo(doc.data().cargo||'');}
+        if(doc.exists){setUserRol(doc.data().rol||'admin');setUserCargo(doc.data().cargo||'');setUserHabilitaciones({habilitarPoa:doc.data().habilitarPoa||false,habilitarIndicadores:doc.data().habilitarIndicadores||false});}
         else setUserRol('admin');
       }else{setUserRol(null);}
       setLoading(false);
@@ -162,7 +163,7 @@ const App=()=>{
   },[]);
   if(loading)return <div className="loading">⏳ Cargando...</div>;
   if(!user)return <AuthScreen/>;
-  return <MainApp user={user} userRol={userRol} userCargo={userCargo}/>;
+  return <MainApp user={user} userRol={userRol} userCargo={userCargo} userHabilitaciones={userHabilitaciones}/>;
 };
 const AuthScreen=()=>{const[isLogin,setIsLogin]=useState(true);const[email,setEmail]=useState('');const[password,setPassword]=useState('');const[error,setError]=useState('');
   const[aceptado,setAceptado]=useState(false);const[loading,setLoading]=useState(false);
@@ -178,7 +179,7 @@ const AuthScreen=()=>{const[isLogin,setIsLogin]=useState(true);const[email,setEm
           </label>
         </div>
         <button type="submit" className="btn-primary" disabled={loading||!aceptado}>{loading?'⏳':(isLogin?'🔐 Entrar':'📝 Crear Cuenta')}</button></form><div style={{textAlign:'center',fontSize:'0.875rem',color:'#6B7280'}}>{isLogin?'¿No tienes cuenta? ':'¿Ya tienes cuenta? '}<button onClick={()=>setIsLogin(!isLogin)} style={{background:'none',border:'none',color:'#D70014',fontWeight:600,cursor:'pointer',textDecoration:'underline'}}>{isLogin?'Regístrate':'Inicia sesión'}</button></div><AvisoLegal modo="login"/></div></div>);};
-const MainApp=({user,userRol,userCargo})=>{
+const MainApp=({user,userRol,userCargo,userHabilitaciones={}})=>{
   const[sidebarOpen,setSidebarOpen]=useState(true);
   const isAdmin=userRol==='admin'||userRol===null;
   const isMonitoreo=userRol==='monitoreo';
@@ -235,7 +236,7 @@ const MainApp=({user,userRol,userCargo})=>{
         {!isMonitoreo&&<button className={`nav-item ${vista==='seguimiento'?'activo':''}`} onClick={()=>setVista('seguimiento')} disabled={!entidadActiva}>📝 Seguimiento</button>}
         {isMonitoreo&&<button className={`nav-item ${vista==='seguimiento'?'activo':''}`} onClick={()=>setVista('seguimiento')} disabled={!entidadActiva}>📈 Seguimiento</button>}
         <button className={`nav-item ${vista==='dashboard'?'activo':''}`} onClick={()=>setVista('dashboard')} disabled={!entidadActiva}>📊 Dashboard</button>
-        <button className={`nav-item ${vista==='poa'?'activo':''}`} onClick={()=>setVista('poa')} disabled={!entidadActiva}>🗓️ Plan Operativo</button>
+        {(!isLiderPE||(isLiderPE&&userHabilitaciones.habilitarPoa))&&<button className={`nav-item ${vista==='poa'?'activo':''}`} onClick={()=>setVista('poa')} disabled={!entidadActiva}>🗓️ Plan Operativo</button>}
         {isAdmin&&<button className={`nav-item ${vista==='usuarios'?'activo':''}`} onClick={()=>setVista('usuarios')} disabled={!entidadActiva}>👥 Usuarios</button>}
         {isAdmin&&<button className={`nav-item ${vista==='cargos'?'activo':''}`} onClick={()=>setVista('cargos')}>🏷️ Cargos</button>}
       </div>
@@ -1695,7 +1696,7 @@ const VistaAnalisis=({entidad,isAdmin,isMonitoreo,userCargo,user})=>{
         {isAdmin&&moduloAprobado('sintesis')&&<button className="btn-secondary" style={{fontSize:'0.8rem',borderColor:'#D97706',color:'#D97706',width:'auto'}} onClick={()=>desbloquearModulo('sintesis')}>🔓 Desbloquear</button>}
       </div>
       <AnalisisSintesis eric={eric} bmc={bmc} onUpdate={(id,d)=>update('eric',id,d)} isAdmin={isAdmin} miArea={miArea} userCargo={userCargo}/></div>}
-      {sub==='canvas_consolidado'&&isAdmin&&(<div>
+      {sub==='canvas_consolidado'&&(isAdmin||isLiderPE)&&(<div>
         <div className="page-header" style={{marginBottom:'1rem'}}>
           <h2>🗂️ Canvas Estratégico Consolidado — {entidad.nombre}</h2>
         </div>
@@ -3025,7 +3026,7 @@ const VistaSeguimiento=({user,entidad,datos,isMonitoreo,userCargo})=>{
 };const VistaUsuarios=({user,userRol,entidad})=>{
   const[usuarios,setUsuarios]=useState([]);
   const[modal,setModal]=useState(false);
-  const[form,setForm]=useState({email:'',password:'',rol:'seguimiento',nombre:''});
+  const[form,setForm]=useState({email:'',password:'',rol:'seguimiento',nombre:'',cargo:'',habilitarPoa:false,habilitarIndicadores:false});
   const[usuarioEdit,setUsuarioEdit]=useState(null);
   const[loading,setLoading]=useState(false);
   const[busquedaPOA,setBusquedaPOA]=useState('');
@@ -3046,7 +3047,7 @@ const VistaSeguimiento=({user,entidad,datos,isMonitoreo,userCargo})=>{
     e.preventDefault();setLoading(true);setMensaje({texto:'',tipo:''});
     try{
       if(usuarioEdit){
-        await db.collection('coofisam_usuarios').doc(usuarioEdit.id).update({nombre:form.nombre||form.email,rol:form.rol,cargo:form.cargo||''});
+        await db.collection('coofisam_usuarios').doc(usuarioEdit.id).update({nombre:form.nombre||form.email,rol:form.rol,cargo:form.cargo||'',habilitarPoa:form.habilitarPoa||false,habilitarIndicadores:form.habilitarIndicadores||false});
         setMensaje({texto:'Actualizado.',tipo:'ok'});
         setModal(false);setForm({email:'',password:'',rol:'seguimiento',nombre:''});setUsuarioEdit(null);
         setLoading(false);return;
@@ -3151,10 +3152,25 @@ const VistaSeguimiento=({user,entidad,datos,isMonitoreo,userCargo})=>{
                 <select value={u.rol} onChange={e=>cambiarRol(u.id,e.target.value)}
                   style={{padding:'0.4rem 0.5rem',borderRadius:'6px',border:'2px solid #E5E7EB',fontSize:'0.875rem'}}>
                   <option value="admin">Admin</option>
+                  <option value="lider_pe">Líder Plan Estratégico</option>
                   <option value="seguimiento">Seguimiento</option>
                   <option value="monitoreo">Monitoreo</option>
                 </select>
               )}</td>
+              {u.rol==='lider_pe'?<td>
+                <div style={{display:'flex',flexDirection:'column',gap:'0.3rem'}}>
+                  <label style={{display:'flex',alignItems:'center',gap:'0.4rem',fontSize:'0.78rem',cursor:'pointer'}}>
+                    <input type="checkbox" checked={u.habilitarPoa||false}
+                      onChange={async e=>await db.collection('coofisam_usuarios').doc(u.id).update({habilitarPoa:e.target.checked})}/>
+                    📋 POA
+                  </label>
+                  <label style={{display:'flex',alignItems:'center',gap:'0.4rem',fontSize:'0.78rem',cursor:'pointer'}}>
+                    <input type="checkbox" checked={u.habilitarIndicadores||false}
+                      onChange={async e=>await db.collection('coofisam_usuarios').doc(u.id).update({habilitarIndicadores:e.target.checked})}/>
+                    📊 Metas e Indicadores
+                  </label>
+                </div>
+              </td>:<td style={{color:'#9CA3AF',fontSize:'0.78rem'}}>—</td>}
               <td>{!esTu&&(
                 <div style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
                   <button className="btn-edit" onClick={()=>abrirEditar(u)}>Editar</button>
