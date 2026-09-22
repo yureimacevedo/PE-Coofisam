@@ -1484,6 +1484,34 @@ const ModalImpresionAnalisis=({entidad,vrio,contraste,pestel,bmc,eric,areaLabel,
 
 const TRANSVERSAL='Transversal / Corporativo';
 
+const CanvasConsolidadoBloque=({bloque,entidad})=>{
+  const[texto,setTexto]=React.useState('');
+  const[guardado,setGuardado]=React.useState(false);
+  React.useEffect(()=>{
+    if(!entidad)return;
+    const unsub=db.collection('coofisam_datos').doc(entidad.id)
+      .collection('canvas_consolidado').doc(bloque.key)
+      .onSnapshot(snap=>{if(snap.exists)setTexto(snap.data().texto||'');});
+    return()=>unsub();
+  },[entidad,bloque.key]);
+  const guardar=async()=>{
+    await db.collection('coofisam_datos').doc(entidad.id)
+      .collection('canvas_consolidado').doc(bloque.key)
+      .set({texto,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    setGuardado(true);setTimeout(()=>setGuardado(false),2000);
+  };
+  return(<div style={{marginBottom:'1.25rem',borderLeft:'3px solid #D70014',paddingLeft:'0.75rem'}}>
+    <label style={{fontWeight:700,fontSize:'0.85rem',color:'#374151',display:'block',marginBottom:'0.3rem'}}>{bloque.label}</label>
+    <textarea value={texto} onChange={e=>setTexto(e.target.value)} rows={4}
+      style={{width:'100%',padding:'0.6rem',border:'1px solid #E5E7EB',borderRadius:'6px',fontSize:'0.85rem',lineHeight:1.6,resize:'vertical'}}
+      placeholder={'Escribe aquí la síntesis consolidada de '+bloque.label+'...'}/>
+    <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginTop:'0.25rem'}}>
+      <button onClick={guardar} style={{background:'#D70014',color:'white',border:'none',borderRadius:'6px',padding:'0.25rem 0.75rem',cursor:'pointer',fontSize:'0.78rem'}}>💾 Guardar</button>
+      {guardado&&<span style={{color:'#059669',fontSize:'0.78rem',fontWeight:600}}>✅ Guardado</span>}
+    </div>
+  </div>);
+};
+
 const VistaAnalisis=({entidad,isAdmin,isMonitoreo,userCargo,user})=>{
   const[sub,setSub]=useState('vrio');
   const[cargos,setCargos]=useState([]);
@@ -1668,10 +1696,36 @@ const VistaAnalisis=({entidad,isAdmin,isMonitoreo,userCargo,user})=>{
       </div>
       <AnalisisSintesis eric={eric} bmc={bmc} onUpdate={(id,d)=>update('eric',id,d)} isAdmin={isAdmin} miArea={miArea} userCargo={userCargo}/></div>}
       {sub==='canvas_consolidado'&&isAdmin&&(<div>
-        <div className="card" style={{textAlign:'center',padding:'2rem'}}>
-          <div style={{fontSize:'2.5rem',marginBottom:'1rem'}}>🗂️</div>
-          <h3 style={{color:'#D70014',marginBottom:'0.5rem'}}>Canvas Consolidado de Entidad</h3>
-          <p style={{color:'#6B7280',maxWidth:'500px',margin:'0 auto'}}>Este espacio está reservado para el Canvas estratégico consolidado de la entidad. Se construirá manualmente a partir del análisis por áreas.</p>
+        <div className="page-header" style={{marginBottom:'1rem'}}>
+          <h2>🗂️ Canvas Estratégico Consolidado — {entidad.nombre}</h2>
+        </div>
+
+        {/* Sección A: Consolidación automática desde notas BMC */}
+        <div className="card" style={{marginBottom:'1rem'}}>
+          <h3 style={{marginBottom:'0.75rem',color:'#D70014'}}>📊 Notas por bloque (desde análisis de áreas)</h3>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:'0.75rem'}}>
+            {BMC_BLOCKS.map(bloque=>{
+              const notas=bmc.filter(n=>n.bloque===bloque.key);
+              if(notas.length===0)return null;
+              return(<div key={bloque.key} style={{background:'#F9FAFB',borderRadius:'8px',padding:'0.75rem',border:'1px solid #E5E7EB'}}>
+                <h4 style={{fontSize:'0.82rem',fontWeight:700,color:'#374151',borderBottom:'2px solid #D70014',paddingBottom:'0.3rem',marginBottom:'0.5rem'}}>{bloque.label}</h4>
+                {notas.map(n=>(
+                  <div key={n.id} style={{fontSize:'0.78rem',color:'#4B5563',padding:'0.25rem 0',borderBottom:'1px solid #F3F4F6'}}>
+                    • {n.texto} {n.area&&<span style={{fontSize:'0.7rem',color:'#9CA3AF'}}>({n.area})</span>}
+                  </div>
+                ))}
+              </div>);
+            })}
+          </div>
+        </div>
+
+        {/* Sección B: Texto consolidado editable por bloque */}
+        <div className="card">
+          <h3 style={{marginBottom:'0.75rem',color:'#D70014'}}>✏️ Canvas Consolidado Final (editable)</h3>
+          <p style={{fontSize:'0.82rem',color:'#6B7280',marginBottom:'1rem'}}>Escribe o pega aquí la versión consolidada de cada bloque. Esta es la versión oficial que se imprime.</p>
+          {BMC_BLOCKS.map(bloque=>(
+            <CanvasConsolidadoBloque key={bloque.key} bloque={bloque} entidad={entidad}/>
+          ))}
         </div>
       </div>)}
     {modalPrint&&<ModalImpresionAnalisis entidad={entidad} vrio={vrio} contraste={contraste} pestel={pestel} bmc={bmc} eric={eric} areaLabel={areaLabelActual} onClose={()=>setModalPrint(false)}/>}
