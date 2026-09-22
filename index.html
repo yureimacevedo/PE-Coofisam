@@ -920,6 +920,7 @@ const VistaDireccionamiento=({entidad,isAdmin})=>{
 };
 
 const VistaConfig=({user,entidad,datos,isAdmin})=>{
+  const[metasAprobadas,setMetasAprobadas]=useState({});
   const[modal,setModal]=useState(null);
   const[form,setForm]=useState({});
   const[itemEdit,setItemEdit]=useState(null);
@@ -929,6 +930,26 @@ const VistaConfig=({user,entidad,datos,isAdmin})=>{
   if(!entidad||!datos)return <div className="empty-state"><h3>Selecciona un periodo PE</h3></div>;
   const{ejes=[],objetivos=[],estrategias=[],indicadores=[]}=datos;
   const ref=db.collection('coofisam_datos').doc(entidad.id);
+  // Cargar aprobaciones de metas
+  React.useEffect(()=>{
+    if(!entidad)return;
+    const unsub=ref.collection('metas_aprobadas').onSnapshot(s=>{
+      const ap={};s.forEach(doc=>{ap[doc.id]=doc.data();});
+      setMetasAprobadas(ap);
+    });
+    return()=>unsub();
+  },[entidad]);
+  const metaAprobada=(indId)=>metasAprobadas[indId]?.aprobado===true;
+  const aprobarMetas=async(ind)=>{
+    if(!window.confirm('¿Aprobar las metas de "'+ind.nombre+'"? No se podrán modificar sin desbloquear.'))return;
+    try{await ref.collection('metas_aprobadas').doc(ind.id).set({aprobado:true,aprobadoPor:user?.email,aprobadoAt:firebase.firestore.FieldValue.serverTimestamp()});}
+    catch(e){alert('Error: '+e.message);}
+  };
+  const desbloquearMetas=async(ind)=>{
+    if(!window.confirm('¿Desbloquear las metas de "'+ind.nombre+'"? Solo con autorización de gerencia.'))return;
+    try{await ref.collection('metas_aprobadas').doc(ind.id).set({aprobado:false,aprobadoPor:null,aprobadoAt:null});}
+    catch(e){alert('Error: '+e.message);}
+  };
   const scoreConfig=entidad.scoreConfig||{critico:{min:0,max:60},precaucion:{min:61,max:85},optimo:{min:86,max:100}};
 
   const guardarEje=async(e)=>{e.preventDefault();setLoading(true);try{if(itemEdit){await ref.collection('ejes').doc(itemEdit.id).update(form);}else{await ref.collection('ejes').add(form);}setModal(null);setForm({});setItemEdit(null);}catch(error){alert('Error: '+error.message);}finally{setLoading(false);}};
@@ -1145,7 +1166,12 @@ const VistaConfig=({user,entidad,datos,isAdmin})=>{
                       <h4>{ind.nombre}</h4>
                       <p style={{color:'#6B7280',fontSize:'0.875rem',marginTop:'0.5rem'}}>Meta: {ind.meta} {ind.unidad} | {ind.tipo==='ascendente'?'📈':'📉'} | {ind.periodicidad}</p>
                       {ind.metasPorAnio&&Object.keys(ind.metasPorAnio).length>0&&(<p style={{color:'#D70014',fontSize:'0.75rem',marginTop:'0.25rem'}}>Metas: {Object.entries(ind.metasPorAnio).map(([a,m])=>`${a}:${m}`).join(', ')}</p>)}
-                      <div className="btn-group"><button className="btn-edit" onClick={()=>editarIndicador(ind)}>✏️ Editar</button><button className="btn-secondary" onClick={()=>eliminar('indicadores',ind.id)}>🗑️ Eliminar</button></div>
+                      <div className="btn-group">
+                        {!metaAprobada(ind.id)&&<button className="btn-edit" onClick={()=>editarIndicador(ind)}>✏️ Editar</button>}
+                        {!metaAprobada(ind.id)&&isAdmin&&<button className="btn-secondary" onClick={()=>eliminar('indicadores',ind.id)}>🗑️ Eliminar</button>}
+                        {isAdmin&&!metaAprobada(ind.id)&&<button className="btn-primary" style={{background:'#059669',width:'auto',padding:'0.3rem 0.6rem',fontSize:'0.75rem'}} onClick={()=>aprobarMetas(ind)}>✅ Aprobar metas</button>}
+                        {isAdmin&&metaAprobada(ind.id)&&<><span style={{background:'#D1FAE5',color:'#065F46',fontSize:'0.7rem',padding:'2px 8px',borderRadius:'10px'}}>✅ Metas aprobadas</span><button className="btn-secondary" style={{borderColor:'#D97706',color:'#D97706',width:'auto',padding:'0.3rem 0.6rem',fontSize:'0.75rem'}} onClick={()=>desbloquearMetas(ind)}>🔓</button></>}
+                      </div>
                     </div>))}</div>
                 </div>);
               })}
@@ -1223,7 +1249,7 @@ const VistaConfig=({user,entidad,datos,isAdmin})=>{
           <div className="form-group"><label>Tipo de Meta</label><select value={form.tipoMeta||'independiente'} onChange={e=>setForm({...form,tipoMeta:e.target.value})}><option value="independiente">Independiente</option><option value="acumulativa">Acumulativa</option></select></div>
         </div>
         <div className="form-row">
-          <div className="form-group"><label>Meta Base *</label><input type="number" step="0.01" value={form.meta} onChange={e=>setForm({...form,meta:e.target.value})} required/></div>
+          <div className="form-group"><label>Meta Base {metaAprobada(itemEdit?.id)&&<span style={{color:'#059669',fontSize:'0.75rem'}}>🔒 Aprobada</span>} *</label><input type="number" step="0.01" value={form.meta} onChange={e=>!metaAprobada(itemEdit?.id)&&setForm({...form,meta:e.target.value})} readOnly={metaAprobada(itemEdit?.id)} style={{background:metaAprobada(itemEdit?.id)?'#F0FDF4':undefined}} required/></div>
           <div className="form-group"><label>Unidad *</label><input type="text" value={form.unidad} onChange={e=>setForm({...form,unidad:e.target.value})} required placeholder="%"/></div>
         </div>
         <div className="form-group"><label>Años con Metas Específicas</label><input type="text" value={form.anios} onChange={e=>setForm({...form,anios:e.target.value})} placeholder="2025,2026,2027"/><small style={{color:'#6B7280',display:'block',marginTop:'0.25rem'}}>Separados por coma</small></div>
