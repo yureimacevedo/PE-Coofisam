@@ -1167,10 +1167,10 @@ const VistaConfig=({user,entidad,datos,isAdmin})=>{
                       <p style={{color:'#6B7280',fontSize:'0.875rem',marginTop:'0.5rem'}}>Meta: {ind.meta} {ind.unidad} | {ind.tipo==='ascendente'?'📈':'📉'} | {ind.periodicidad}</p>
                       {ind.metasPorAnio&&Object.keys(ind.metasPorAnio).length>0&&(<p style={{color:'#D70014',fontSize:'0.75rem',marginTop:'0.25rem'}}>Metas: {Object.entries(ind.metasPorAnio).map(([a,m])=>`${a}:${m}`).join(', ')}</p>)}
                       <div className="btn-group">
-                        {!metaAprobada(ind.id)&&<button className="btn-edit" onClick={()=>editarIndicador(ind)}>✏️ Editar</button>}
-                        {!metaAprobada(ind.id)&&isAdmin&&<button className="btn-secondary" onClick={()=>eliminar('indicadores',ind.id)}>🗑️ Eliminar</button>}
-                        {isAdmin&&!metaAprobada(ind.id)&&<button className="btn-primary" style={{background:'#059669',width:'auto',padding:'0.3rem 0.6rem',fontSize:'0.75rem'}} onClick={()=>aprobarMetas(ind)}>✅ Aprobar metas</button>}
-                        {isAdmin&&metaAprobada(ind.id)&&<><span style={{background:'#D1FAE5',color:'#065F46',fontSize:'0.7rem',padding:'2px 8px',borderRadius:'10px'}}>✅ Metas aprobadas</span><button className="btn-secondary" style={{borderColor:'#D97706',color:'#D97706',width:'auto',padding:'0.3rem 0.6rem',fontSize:'0.75rem'}} onClick={()=>desbloquearMetas(ind)}>🔓</button></>}
+                        {metasAprobadas[ind.id]?.aprobado!==true&&<button className="btn-edit" onClick={()=>editarIndicador(ind)}>✏️ Editar</button>}
+                        {metasAprobadas[ind.id]?.aprobado!==true&&isAdmin&&<button className="btn-secondary" onClick={()=>eliminar('indicadores',ind.id)}>🗑️ Eliminar</button>}
+                        {isAdmin&&(metasAprobadas[ind.id]?.aprobado!==true)&&<button className="btn-primary" style={{background:'#059669',width:'auto',padding:'0.3rem 0.6rem',fontSize:'0.75rem'}} onClick={()=>aprobarMetas(ind)}>✅ Aprobar metas</button>}
+                        {isAdmin&&metasAprobadas[ind.id]?.aprobado===true&&<><span style={{background:'#D1FAE5',color:'#065F46',fontSize:'0.7rem',padding:'2px 8px',borderRadius:'10px'}}>✅ Metas aprobadas</span><button className="btn-secondary" style={{borderColor:'#D97706',color:'#D97706',width:'auto',padding:'0.3rem 0.6rem',fontSize:'0.75rem'}} onClick={()=>desbloquearMetas(ind)}>🔓</button></>}
                       </div>
                     </div>))}</div>
                 </div>);
