@@ -237,7 +237,7 @@ const MainApp=({user,userRol,userCargo,userHabilitaciones={}})=>{
         {!isMonitoreo&&<button className={`nav-item ${vista==='seguimiento'?'activo':''}`} onClick={()=>setVista('seguimiento')} disabled={!entidadActiva}>📝 Seguimiento</button>}
         {isMonitoreo&&<button className={`nav-item ${vista==='seguimiento'?'activo':''}`} onClick={()=>setVista('seguimiento')} disabled={!entidadActiva}>📈 Seguimiento</button>}
         <button className={`nav-item ${vista==='dashboard'?'activo':''}`} onClick={()=>setVista('dashboard')} disabled={!entidadActiva}>📊 Dashboard</button>
-        {(isAdmin||(isLiderPE&&userHabilitaciones.habilitarPoa))&&<button className={`nav-item ${vista==='poa'?'activo':''}`} onClick={()=>setVista('poa')} disabled={!entidadActiva}>🗓️ Plan Operativo</button>}
+        {(isAdmin||isLiderPE)&&<button className={`nav-item ${vista==='poa'?'activo':''}`} onClick={()=>setVista('poa')} disabled={!entidadActiva}>🗓️ Plan Operativo</button>}
         {isAdmin&&<button className={`nav-item ${vista==='usuarios'?'activo':''}`} onClick={()=>setVista('usuarios')} disabled={!entidadActiva}>👥 Usuarios</button>}
         {isAdmin&&<button className={`nav-item ${vista==='cargos'?'activo':''}`} onClick={()=>setVista('cargos')}>🏷️ Cargos</button>}
       </div>
@@ -249,7 +249,7 @@ const MainApp=({user,userRol,userCargo,userHabilitaciones={}})=>{
       {vista==='analisis'&&<VistaAnalisis entidad={entidadActiva} isAdmin={isAdmin} isMonitoreo={isMonitoreo} userCargo={userCargo} user={user} userHabilitaciones={userHabilitaciones}/>}
       {vista==='seguimiento'&&<VistaSeguimiento user={user} entidad={entidadActiva} datos={datos} isMonitoreo={isMonitoreo} userCargo={userCargo}/>}
       {vista==='dashboard'&&<VistaDashboard entidad={entidadActiva} datos={datos}/>}
-      {vista==='poa'&&<VistaPlanOperativo user={user} entidad={entidadActiva} datos={datos} isAdmin={isAdmin} isMonitoreo={isMonitoreo} userCargo={userCargo}/>}
+      {vista==='poa'&&<VistaPlanOperativo user={user} entidad={entidadActiva} datos={datos} isAdmin={isAdmin} isMonitoreo={isMonitoreo||(isLiderPE&&!userHabilitaciones.habilitarPoa)} userCargo={userCargo}/>}
       {isAdmin&&vista==='usuarios'&&<VistaUsuarios user={user} userRol={userRol} entidad={entidadActiva}/>}
       {isAdmin&&vista==='cargos'&&<VistaCargos entidad={entidadActiva}/>}
     </main>
