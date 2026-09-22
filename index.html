@@ -5,6 +5,10 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAEZklEQVR4nO1bPW8URxh+ZmbtszHGwYcRGERQsLEESBTkw8jCtkR+QCSkVElF4QaR/5AfQGEJhAIKSkNhKSnSREqRigMkwEpQimDAhYvAOTbmcGLsu92ZFPbCzezM3e7s3tfePdXde7O77/PM874zu/YS1AkDl78UUcYXZudIrXIpR80uEpVwNdRKkMRPmjRxFUkLkdjJak1cRVJCxD5JvYmriCuE9cGNJq7CVghqc1CzkQfsc4osQDOS92GTW2jbNDNxHcKWRCgHtBp5IHzOVQVoRfI+wuRu1QTThIoCtPLs+6jGwShAGsj7qMRFK0CayPswcer0ADWQxtn3oePWcUD5lzTPvg+VY8cB/od2mH0f5Vw7DgDaa/Z9+Jw7Dmh0Ao1G2wtAotZ/Dzxc6X6IIbIpxW+4o/jVGzYeN+Ms4HP2Qor9yT/At6XT8BPYDRc3MnfhIJjSN8VP8LfYFSXVUIjsgE0wXHePB+JfOYsYJFvaY07QAs4r5LdAcd0dk6hOsGUteQCYYvmoqYaCVQk85nvxm3dAivXCw0XnWWBsFzhmnIXAw8fb7kfIix4pNs1eGq85RfM1+TuedQ/4wT2GVyIjxT6lK/iMrkixC84ShsmGFHvC9+AX75AUGyYbGCHrxutlyRZO0TXbdI2wFmADDr5zRwPxi85T7IILADhC/sMXbEn6vQSKa4r1AWBasbgHgnXRJcWmaPJlEGsVeMSzuMP3S7G9pIivnUUQbDc+plCdc48GmhkBcE4h9zsfRI4PSbFxtoIeeHFSDiD2Mvi9O4KCMlPn2Qtccv7CcfpGij8X/fjZOxw4xym6hn1KA815+5FTxM3AwziTSywuYguwLrpwUykFAmBSY+lrpTFwTStTrV0ExQOexRM+gFWlz0xRc6O0QSIboft8CPcVu6r40f0QS6IvENfN6jzPYnOneO4q5z1JXwfcEgeJ7QRvuiP4F472tyXRh5+8I9rfxtkKMkpd57yhss9yGRAAkwk2w8QEKIhu3HJHAnEOgqulMXiGVXxasfRbMDzi2Xffn4t+vBS98jEV9gtRkei9wD0vWAb/iB4sin7t+CzZwkn6Woo98PahpKSllsFB8jbQYG3hFGbnIt8PJAXd7m6S5QMN1HTsAt8T6/qF2TnS0LvBMERNmGDL6AKPnUPDBBilb3BI2SJHQR9cfExXY+ehb9t1gLr2CwAzxbNYE93a8QwCtzI59JatGNMsj3tVlt9qoED9/ivThwOBCbYsxRZFv5E8sL2R+oMPSrHT9BUGSNEqB59zQ0rgDF3F7p0bJh8Pvaxh9HuUL4/AtivO0WXD6HB4J0A9XaBbx+d5dQHm+WDgLtLmQUk5V4l0uzweLxeAmn5IK1SObf9UOCBAml2g49ZxgC6YRheYOBkdkCYRKnGpWAJpEKEah04PqDaglV0QJvdQDmhFEcLmHJlYs2+Xo05W5B7QzG6wyc2qCTajCLY5dV6bSyqRtn1xUkXbvjqrom1fnjahWV+f/x8bfZUCZWTnbwAAAABJRU5ErkJggg==">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nórdico | COOFISAM</title>
@@ -39,7 +43,23 @@
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel" data-presets="react">/* VERSIÓN: 1774052406 - Sin caché *//* VERSION: 1774050522 - Meta actualizada */
+<script type="text/babel" data-presets="react">
+// ── Seguridad: Timeout de sesión por inactividad (30 minutos) ──
+(function(){
+  const TIMEOUT_MS = 30 * 60 * 1000;
+  let timer;
+  function resetTimer(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){
+      firebase.auth().signOut();
+      alert('Tu sesión se cerró por inactividad (30 minutos). Ingresa de nuevo.');
+    }, TIMEOUT_MS);
+  }
+  ['click','keydown','mousemove','scroll','touchstart'].forEach(function(ev){
+    document.addEventListener(ev, resetTimer, {passive:true});
+  });
+  resetTimer();
+})();/* VERSIÓN: 1774052406 - Sin caché *//* VERSION: 1774050522 - Meta actualizada */
 
 
 
@@ -133,8 +153,16 @@ const App=()=>{
   if(!user)return <AuthScreen/>;
   return <MainApp user={user} userRol={userRol} userCargo={userCargo}/>;
 };
-const AuthScreen=()=>{const[isLogin,setIsLogin]=useState(true);const[email,setEmail]=useState('');const[password,setPassword]=useState('');const[error,setError]=useState('');const[loading,setLoading]=useState(false);
-  const[busquedaPOA,setBusquedaPOA]=useState('');const handleSubmit=async(e)=>{e.preventDefault();setError('');setLoading(true);try{if(isLogin)await auth.signInWithEmailAndPassword(email,password);else await auth.createUserWithEmailAndPassword(email,password);}catch(err){setError(err.message);}finally{setLoading(false);}};return(<div className="auth-container"><div className="auth-box"><div className="auth-header"><h1>🧭 Nórdico</h1><p style={{fontSize:'0.8rem',color:'#6B7280',marginTop:'0.25rem'}}>Planeación Estratégica</p><p>{isLogin?'Inicia sesión':'Crea tu cuenta'}</p></div>{error&&<div className="error-message">⚠️ {error}</div>}<form onSubmit={handleSubmit}><div className="form-group"><label>Email</label><input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} required/></div><div className="form-group"><label>Contraseña</label><input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} required/></div><button type="submit" className="btn-primary" disabled={loading}>{loading?'⏳':(isLogin?'🔐 Entrar':'📝 Crear Cuenta')}</button></form><div style={{textAlign:'center',fontSize:'0.875rem',color:'#6B7280'}}>{isLogin?'¿No tienes cuenta? ':'¿Ya tienes cuenta? '}<button onClick={()=>setIsLogin(!isLogin)} style={{background:'none',border:'none',color:'#D70014',fontWeight:600,cursor:'pointer',textDecoration:'underline'}}>{isLogin?'Regístrate':'Inicia sesión'}</button></div><AvisoLegal modo="login"/></div></div>);};
+const AuthScreen=()=>{const[isLogin,setIsLogin]=useState(true);const[email,setEmail]=useState('');const[password,setPassword]=useState('');const[error,setError]=useState('');
+  const[aceptado,setAceptado]=useState(false);const[loading,setLoading]=useState(false);
+  const[busquedaPOA,setBusquedaPOA]=useState('');const handleSubmit=async(e)=>{e.preventDefault();setError('');setLoading(true);try{if(isLogin)await auth.signInWithEmailAndPassword(email,password);
+      try{const u=auth.currentUser;if(u){db.collection('coofisam_accesos').add({uid:u.uid,email:u.email,fecha:firebase.firestore.FieldValue.serverTimestamp(),userAgent:navigator.userAgent.substring(0,100)});}}catch(e){}else await auth.createUserWithEmailAndPassword(email,password);}catch(err){setError(err.message);}finally{setLoading(false);}};return(<div className="auth-container"><div className="auth-box"><div className="auth-header"><h1>🧭 Nórdico</h1><p style={{fontSize:'0.8rem',color:'#6B7280',marginTop:'0.25rem'}}>Planeación Estratégica</p><p>{isLogin?'Inicia sesión':'Crea tu cuenta'}</p></div>{error&&<div className="error-message">⚠️ {error}</div>}<form onSubmit={handleSubmit}><div className="form-group"><label>Email</label><input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} required/></div><div className="form-group"><label>Contraseña</label><input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} required/></div><div style={{display:'flex',alignItems:'flex-start',gap:'0.5rem',marginBottom:'1rem',padding:'0.75rem',background:'#FFF8F0',borderRadius:'8px',border:'1px solid #FDE68A'}}>
+          <input type="checkbox" id="terminos" checked={aceptado} onChange={e=>setAceptado(e.target.checked)} style={{marginTop:'0.2rem',cursor:'pointer'}}/>
+          <label htmlFor="terminos" style={{fontSize:'0.8rem',color:'#374151',cursor:'pointer',lineHeight:1.5}}>
+            Acepto el uso responsable de esta plataforma. La información aquí contenida es <strong>confidencial</strong> y de uso exclusivo de la entidad. Su divulgación no autorizada viola la Circular 036 de Supersolidaria.
+          </label>
+        </div>
+        <button type="submit" className="btn-primary" disabled={loading||!aceptado}>{loading?'⏳':(isLogin?'🔐 Entrar':'📝 Crear Cuenta')}</button></form><div style={{textAlign:'center',fontSize:'0.875rem',color:'#6B7280'}}>{isLogin?'¿No tienes cuenta? ':'¿Ya tienes cuenta? '}<button onClick={()=>setIsLogin(!isLogin)} style={{background:'none',border:'none',color:'#D70014',fontWeight:600,cursor:'pointer',textDecoration:'underline'}}>{isLogin?'Regístrate':'Inicia sesión'}</button></div><AvisoLegal modo="login"/></div></div>);};
 const MainApp=({user,userRol,userCargo})=>{
   const[sidebarOpen,setSidebarOpen]=useState(true);
   const isAdmin=userRol==='admin'||userRol===null;
@@ -2912,7 +2940,12 @@ const VistaSeguimiento=({user,entidad,datos,isMonitoreo,userCargo})=>{
         try{
           const _app=firebase.initializeApp(firebase.app().options,'sec'+Date.now());
           const _auth=_app.auth();
-          const cred=await _auth.createUserWithEmailAndPassword(form.email,form.password);
+          // Validar contraseña fuerte
+        const pwd=form.password;
+        if(pwd.length<8){throw new Error('La contraseña debe tener mínimo 8 caracteres.');}
+        if(!/[A-Z]/.test(pwd)){throw new Error('La contraseña debe tener al menos una mayúscula.');}
+        if(!/[0-9]/.test(pwd)){throw new Error('La contraseña debe tener al menos un número.');}
+        const cred=await _auth.createUserWithEmailAndPassword(form.email,form.password);
           uid=cred.user.uid;
           await _auth.signOut();await _app.delete();
         }catch(authErr){
